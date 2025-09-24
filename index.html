@@ -3,39 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Family Tree</title>
-    <!-- Use Tailwind CSS for rapid styling -->
+    <title>Family Tree Builder</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 2rem;
-            flex-direction: column;
-            overflow-x: auto;
         }
-        
-        /* Custom tree styling */
         .tree ul {
+            display: flex;
+            flex-wrap: nowrap;
+            justify-content: center;
             padding-top: 20px;
             position: relative;
-            transition: all 0.5s;
-            display: flex;
-            justify-content: center;
-            flex-wrap: nowrap;
+            transition: transform 0.3s ease-in-out;
         }
-
+        .tree ul::before, .tree ul::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            border-left: 2px solid #6b7280;
+            height: 20px;
+            transform: translateX(-50%);
+        }
         .tree li {
-            list-style-type: none;
-            text-align: center;
             position: relative;
-            padding: 20px 5px 0 5px;
+            padding: 10px 5px 0 5px;
+            text-align: center;
+            transition: all 0.3s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        
         .tree li::before, .tree li::after {
             content: '';
             position: absolute;
@@ -45,544 +46,404 @@
             width: 50%;
             height: 20px;
         }
-        
         .tree li::after {
-            right: auto;
             left: 50%;
             border-left: 2px solid #6b7280;
         }
-
         .tree li:only-child::after, .tree li:only-child::before {
             display: none;
         }
-
         .tree li:only-child {
             padding-top: 0;
         }
-
         .tree li:first-child::before, .tree li:last-child::after {
             border: 0 none;
         }
-        
         .tree li:last-child::before {
             border-right: 2px solid #6b7280;
             border-radius: 0 5px 0 0;
-            -webkit-border-radius: 0 5px 0 0;
-            -moz-border-radius: 0 5px 0 0;
         }
-        
         .tree li:first-child::after {
             border-radius: 5px 0 0 0;
-            -webkit-border-radius: 5px 0 0 0;
-            -moz-border-radius: 5px 0 0 0;
         }
-
         .tree ul ul::before {
             content: '';
             position: absolute;
-            top: 0;
+            top: -20px;
             left: 50%;
             border-left: 2px solid #6b7280;
-            width: 0;
             height: 20px;
+            z-index: 10;
         }
-
-        .tree li .person {
-            padding: 10px 15px;
-            text-decoration: none;
-            color: #1f2937;
-            font-weight: bold;
-            display: inline-block;
-            border: 2px solid #6b7280;
-            border-radius: 10px;
-            background-color: #ffffff;
-            transition: all 0.5s;
-            position: relative;
-            min-width: 120px;
-        }
-
-        .tree li .person:hover {
-            background: #e5e7eb;
-        }
-
-        /* Input styling */
-        .name-input {
-            border: none;
-            outline: none;
-            text-align: center;
-            font-weight: bold;
-            background-color: transparent;
-            width: 100%;
-        }
-        .name-input:focus {
-            background-color: #f3f4f6;
-            border-radius: 5px;
-        }
-
-        /* Message box styling */
-        .message-box {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 10px;
+        .person {
+            background-color: white;
+            padding: 1rem;
+            border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-            min-width: 300px;
-            text-align: center;
+            border: 2px solid #d1d5db;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            /* Optimized for mobile: let flexbox handle width */
+            flex-shrink: 0;
+            z-index: 20;
+            width: 150px;
+        }
+        .person input[type="text"] {
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            width: 100%;
+        }
+        .person button {
+            background-color: #2563eb;
+            color: white;
+            padding: 0.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        .person button:hover {
+            background-color: #1d4ed8;
+        }
+        .relation-text {
+            color: #4b5563;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+        .tree-container {
+            overflow-x: auto;
+            padding: 1rem 0; /* Adjusted for better mobile padding */
+            display: flex;
+            justify-content: center;
         }
 
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 999;
+        /* Mobile-first adjustments */
+        @media (max-width: 640px) {
+            .person {
+                width: 120px; /* Smaller cards for mobile */
+                padding: 0.75rem;
+            }
+            .person input[type="text"] {
+                font-size: 0.875rem;
+            }
         }
     </style>
 </head>
-<body class="bg-gray-100 flex flex-col items-center p-8">
+<body class="bg-gray-100 p-4 sm:p-8">
 
-    <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-gray-800">My Family Tree</h1>
-        <p class="text-lg text-gray-600 mt-2">Enter names and add new branches to build your family tree.</p>
-        <p class="text-sm text-gray-500 mt-1">Changes are saved automatically to the database.</p>
+    <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-8 sm:mb-12">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">Family Tree Builder</h1>
+            <p class="text-gray-600 mt-2">Enter names and build your family tree. Select "This is me" to see the relationships!</p>
+        </div>
+
+        <div class="flex justify-center items-center gap-4 mb-8">
+            <button id="exportButton" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl shadow-lg transition-all transform hover:scale-105">
+                Export Tree
+            </button>
+        </div>
+
+        <div id="treeContainer" class="tree-container">
+            <div id="tree" class="tree"></div>
+        </div>
     </div>
 
-    <div class="flex justify-center mb-4 space-x-4">
-        <button id="exportBtn" class="px-6 py-2 bg-blue-500 text-white font-semibold rounded-full shadow-md hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
-            Export Tree
-        </button>
-    </div>
-
-    <div id="tree-container" class="tree flex justify-center w-full overflow-x-auto"></div>
-
-    <!-- Firebase SDKs -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        
-        // Set Firebase debug log level
-        setLogLevel('debug');
+        // Helper function to create a unique ID
+        const generateId = () => Math.random().toString(36).substring(2, 9);
 
-        // Global variables for Firebase services
-        let app;
-        let db;
-        let auth;
-        let userId;
-        let meNode = null;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        // Message Box function to replace alerts
-        function showMessage(message) {
-            const overlay = document.createElement('div');
-            overlay.className = 'overlay';
-            document.body.appendChild(overlay);
-
-            const messageBox = document.createElement('div');
-            messageBox.className = 'message-box';
-            messageBox.innerHTML = `
-                <p>${message}</p>
-                <button class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors">OK</button>
-            `;
-            document.body.appendChild(messageBox);
-
-            messageBox.querySelector('button').addEventListener('click', () => {
-                document.body.removeChild(messageBox);
-                document.body.removeChild(overlay);
-            });
-        }
-
-        // Initialize Firebase
-        function initFirebase() {
-            try {
-                if (Object.keys(firebaseConfig).length > 0) {
-                    app = initializeApp(firebaseConfig);
-                    db = getFirestore(app);
-                    auth = getAuth(app);
-                    
-                    onAuthStateChanged(auth, async (user) => {
-                        if (user) {
-                            userId = user.uid;
-                            console.log("User signed in with UID:", userId);
-                            loadFamilyTree();
-                        } else {
-                            try {
-                                if (initialAuthToken) {
-                                    await signInWithCustomToken(auth, initialAuthToken);
-                                } else {
-                                    await signInAnonymously(auth);
-                                }
-                            } catch (error) {
-                                console.error("Firebase Auth Error:", error);
-                                showMessage("Error signing in. Please check the console for details.");
-                            }
-                        }
-                    });
-                } else {
-                    console.error("Firebase config is missing.");
-                    showMessage("Firebase is not configured correctly. Data will not be saved.");
-                }
-            } catch (error) {
-                console.error("Firebase initialization failed:", error);
-                showMessage("Failed to initialize Firebase. Data will not be saved.");
+        // Class to represent a person in the family tree
+        class Person {
+            constructor(name = '', parentId = null) {
+                this.id = generateId();
+                this.name = name;
+                this.parentId = parentId;
+                this.children = [];
             }
         }
-        
-        // Database reference
-        const familyTreeRef = (uid) => doc(db, "artifacts", appId, "users", uid, "familyTree", "data");
 
-        // The family tree data
-        let familyData = {
-            id: 'root',
-            name: 'Grandparent',
-            children: [
-                {
-                    id: 'c1',
-                    name: 'Parent 1',
-                    children: [
-                        { id: 'c1-c1', name: 'Child 1', children: [] },
-                        { id: 'c1-c2', name: 'Child 2', children: [] },
-                        { id: 'c1-c3', name: 'Child 3', children: [] },
-                    ]
-                },
-                {
-                    id: 'c2',
-                    name: 'Parent 2',
-                    children: [
-                        { id: 'c2-c1', name: 'Child 4', children: [], isMe: true },
-                        { id: 'c2-c2', name: 'Child 5', children: [] },
-                        { id: 'c2-c3', name: 'Child 6', children: [] },
-                        { id: 'c2-c4', name: 'Child 7', children: [] },
-                    ]
-                }
-            ]
+        let familyTreeData = new Person('Grandma & Grandpa');
+        let meId = null;
+
+        // Initialize the tree with 7 children as requested
+        for (let i = 0; i < 7; i++) {
+            familyTreeData.children.push(new Person('Child ' + (i + 1), familyTreeData.id));
+        }
+
+        const treeElement = document.getElementById('tree');
+        const exportButton = document.getElementById('exportButton');
+
+        // Function to find a person in the tree by their ID
+        const findPersonById = (id, node = familyTreeData) => {
+            if (node.id === id) return node;
+            for (const child of node.children) {
+                const found = findPersonById(child, id);
+                if (found) return found;
+            }
+            return null;
         };
 
-        // Function to save the tree to the database
-        async function saveFamilyTree() {
-            if (!db || !userId) {
-                console.warn("Database or user ID not ready. Cannot save.");
-                return;
-            }
-            try {
-                await setDoc(familyTreeRef(userId), { tree: familyData });
-                console.log("Family tree saved successfully.");
-            } catch (error) {
-                console.error("Error saving family tree:", error);
-                showMessage("Error saving family tree. Check the console for details.");
-            }
-        }
-
-        // Function to load the tree from the database
-        async function loadFamilyTree() {
-             if (!db || !userId) {
-                console.warn("Database or user ID not ready. Cannot load.");
-                return;
-            }
-            
-            try {
-                const docSnap = await getDoc(familyTreeRef(userId));
-                if (docSnap.exists() && docSnap.data().tree) {
-                    familyData = docSnap.data().tree;
-                    meNode = findMeNode(familyData);
-                    console.log("Family tree loaded successfully.");
-                } else {
-                    console.log("No existing family tree found. Using default.");
-                    await saveFamilyTree(); // Save the initial state
-                }
-                render();
-            } catch (error) {
-                console.error("Error loading family tree:", error);
-                showMessage("Error loading family tree. Check the console for details.");
-            }
-        }
-
-        // Helper function to find the node with isMe: true
-        function findMeNode(node) {
-            if (node.isMe) {
-                return node;
-            }
-            if (node.children) {
-                for (const child of node.children) {
-                    const found = findMeNode(child);
-                    if (found) {
-                        return found;
-                    }
-                }
-            }
-            return null;
-        }
-
-        // Helper function to find a node by its ID
-        function findNodeById(node, id) {
+        // Function to find the path from a person to the root
+        const findPathToRoot = (id, node = familyTreeData, path = []) => {
             if (node.id === id) {
-                return node;
-            }
-            if (node.children) {
-                for (const child of node.children) {
-                    const found = findNodeById(child, id);
-                    if (found) {
-                        return found;
-                    }
-                }
-            }
-            return null;
-        }
-
-        // Helper function to find the path (ancestors) to a node
-        function findPathToNode(node, id, path = []) {
-            path.push(node);
-            if (node.id === id) {
+                path.push(node);
                 return path;
             }
-            if (node.children) {
-                for (const child of node.children) {
-                    const foundPath = findPathToNode(child, id, [...path]);
-                    if (foundPath) {
-                        return foundPath;
-                    }
+            for (const child of node.children) {
+                const foundPath = findPathToRoot(child, id, path);
+                if (foundPath) {
+                    foundPath.push(node);
+                    return foundPath;
                 }
             }
             return null;
-        }
+        };
 
-        // Function to calculate the relationship between two people
-        function getRelationship(mePath, otherPath) {
-            if (!mePath || !otherPath) {
-                return "Unknown";
+        // Function to get the relationship between two people
+        const getRelationship = (person1, person2) => {
+            if (!person1 || !person2 || person1.id === person2.id) {
+                return 'This is me!';
             }
 
-            // Find the common ancestor
-            let commonAncestorIndex = -1;
-            const minLength = Math.min(mePath.length, otherPath.length);
-            for (let i = 0; i < minLength; i++) {
-                if (mePath[i].id === otherPath[i].id) {
-                    commonAncestorIndex = i;
-                } else {
-                    break;
-                }
-            }
-            
-            if (commonAncestorIndex === -1) {
-                return "Not related (in this tree)";
+            const path1 = findPathToRoot(person1.id);
+            const path2 = findPathToRoot(person2.id);
+
+            // Find the lowest common ancestor
+            let lca = null;
+            let i = path1.length - 1;
+            let j = path2.length - 1;
+            while (i >= 0 && j >= 0 && path1[i].id === path2[j].id) {
+                lca = path1[i];
+                i--;
+                j--;
             }
 
-            const meDistance = mePath.length - 1 - commonAncestorIndex;
-            const otherDistance = otherPath.length - 1 - commonAncestorIndex;
+            const depth1 = path1.length - 1;
+            const depth2 = path2.length - 1;
+            const lcaDepth = findPathToRoot(lca.id).length - 1;
 
-            // Same person
-            if (meDistance === 0 && otherDistance === 0) {
-                return "This is me";
-            }
-
-            // Other is an ancestor
-            if (otherDistance === 0) {
-                if (meDistance === 1) return "Parent";
-                if (meDistance === 2) return "Grandparent";
-                return `${meDistance - 1}x Great Grandparent`;
-            }
-
-            // Other is a descendant
-            if (meDistance === 0) {
-                if (otherDistance === 1) return "Child";
-                if (otherDistance === 2) return "Grandchild";
-                return `${otherDistance - 1}x Great Grandchild`;
-            }
+            const dist1 = depth1 - lcaDepth;
+            const dist2 = depth2 - lcaDepth;
 
             // Same generation
-            if (meDistance === otherDistance) {
-                if (meDistance === 1) return "Sibling";
-                const cousinDegree = meDistance - 1;
-                return `${cousinDegree}st Cousin`;
+            if (dist1 === dist2) {
+                if (dist1 === 1) { // Same parents
+                    return 'Sibling';
+                }
+                if (dist1 === 2) { // Grandparents are LCA
+                    return '1st Cousin';
+                }
+                if (dist1 === 3) {
+                    return '2nd Cousin';
+                }
+                if (dist1 === 4) {
+                    return '3rd Cousin';
+                }
+                return `${dist1 - 1}th Cousin`; // Fallback for higher cousins
             }
 
             // Different generations
-            if (meDistance > otherDistance) {
-                const uncleDegree = meDistance - otherDistance - 1;
-                const grandDegree = otherDistance;
-                let prefix = "";
-                if (grandDegree > 1) {
-                    prefix = `${grandDegree - 1}x Great `;
-                }
-                if (uncleDegree === 0) return `${prefix}Aunt/Uncle`;
-                return `${prefix}${uncleDegree}st Cousin, ${meDistance - otherDistance} removed`;
+            if (dist1 === 0) { // person1 is an ancestor of person2
+                if (dist2 === 1) return 'Parent';
+                if (dist2 === 2) return 'Grandparent';
+                if (dist2 === 3) return 'Great Grandparent';
+                return `${dist2 - 1}x Great Grandparent`;
             }
 
-            if (otherDistance > meDistance) {
-                const nieceDegree = otherDistance - meDistance - 1;
-                const grandDegree = meDistance;
-                let prefix = "";
-                if (grandDegree > 1) {
-                    prefix = `${grandDegree - 1}x Great `;
-                }
-                if (nieceDegree === 0) return `${prefix}Niece/Nephew`;
-                return `${prefix}${nieceDegree}st Cousin, ${otherDistance - meDistance} removed`;
-            }
-            
-            return "Relationship";
-        }
-
-        // Function to recursively find the `isMe` node and call the relationship calculation
-        function calculateAllRelationships() {
-            meNode = findMeNode(familyData);
-            const mePath = meNode ? findPathToNode(familyData, meNode.id) : null;
-
-            function traverseAndCalculate(node) {
-                if (node.id !== (meNode?.id || null)) {
-                    const otherPath = findPathToNode(familyData, node.id);
-                    node.relationship = getRelationship(mePath, otherPath);
-                } else {
-                    node.relationship = "This is me";
-                }
-                
-                if (node.children) {
-                    node.children.forEach(child => traverseAndCalculate(child));
-                }
-            }
-            traverseAndCalculate(familyData);
-            render();
-        }
-        
-        // Recursive function to render the tree
-        function renderTree(node) {
-            const li = document.createElement('li');
-            const personDiv = document.createElement('div');
-            personDiv.className = 'person shadow-lg flex flex-col items-center';
-
-            // Name Input
-            const nameInput = document.createElement('input');
-            nameInput.type = 'text';
-            nameInput.value = node.name;
-            nameInput.className = 'name-input text-center text-xl p-2';
-            nameInput.placeholder = "Enter Name";
-            nameInput.addEventListener('change', (e) => {
-                node.name = e.target.value;
-                saveFamilyTree(); // Save on every change
-            });
-
-            // "This is me" Checkbox
-            const checkboxContainer = document.createElement('div');
-            checkboxContainer.className = 'flex items-center space-x-2 mt-2';
-            const meCheckbox = document.createElement('input');
-            meCheckbox.type = 'checkbox';
-            meCheckbox.id = `me-${node.id}`;
-            meCheckbox.className = 'rounded text-blue-600 focus:ring-blue-500 h-4 w-4';
-            meCheckbox.checked = !!node.isMe;
-
-            const meLabel = document.createElement('label');
-            meLabel.htmlFor = `me-${node.id}`;
-            meLabel.textContent = 'This is me';
-            meLabel.className = 'text-xs text-gray-600';
-
-            meCheckbox.addEventListener('change', () => {
-                if (meCheckbox.checked) {
-                    // Uncheck all other nodes
-                    const allNodes = document.querySelectorAll('input[type="checkbox"]');
-                    allNodes.forEach(c => {
-                        if (c.id !== meCheckbox.id) {
-                            c.checked = false;
-                        }
-                    });
-                    
-                    // Update the data model for all nodes
-                    function updateIsMe(n) {
-                        n.isMe = (n.id === node.id);
-                        if (n.children) {
-                            n.children.forEach(child => updateIsMe(child));
-                        }
-                    }
-                    updateIsMe(familyData);
-                    meNode = findNodeById(familyData, node.id);
-                } else {
-                    // If unchecked, set meNode to null
-                    node.isMe = false;
-                    meNode = null;
-                }
-                calculateAllRelationships();
-                saveFamilyTree();
-            });
-
-            checkboxContainer.appendChild(meCheckbox);
-            checkboxContainer.appendChild(meLabel);
-
-            // Add Child Button
-            const addChildBtn = document.createElement('button');
-            addChildBtn.textContent = 'Add Child';
-            addChildBtn.className = 'mt-2 px-4 py-1 bg-green-500 text-white rounded-full text-sm hover:bg-green-600 transition-colors shadow';
-            addChildBtn.addEventListener('click', () => {
-                const newChild = {
-                    id: `${node.id}-${node.children.length + 1}`,
-                    name: 'New Person',
-                    children: []
-                };
-                node.children.push(newChild);
-                render(); // Re-render the entire tree
-                saveFamilyTree(); // Save after adding a new person
-            });
-
-            // Relationship Display
-            const relationshipSpan = document.createElement('p');
-            relationshipSpan.className = 'mt-2 text-xs text-gray-700 font-medium';
-            relationshipSpan.textContent = node.relationship || "Relationship";
-
-            personDiv.appendChild(nameInput);
-            personDiv.appendChild(checkboxContainer);
-            personDiv.appendChild(addChildBtn);
-            personDiv.appendChild(relationshipSpan);
-            li.appendChild(personDiv);
-
-            if (node.children.length > 0) {
-                const ul = document.createElement('ul');
-                ul.className = 'flex flex-wrap justify-center';
-                node.children.forEach(child => {
-                    ul.appendChild(renderTree(child));
-                });
-                li.appendChild(ul);
+            if (dist2 === 0) { // person2 is an ancestor of person1
+                if (dist1 === 1) return 'Child';
+                if (dist1 === 2) return 'Grandchild';
+                if (dist1 === 3) return 'Great Grandchild';
+                return `${dist1 - 1}x Great Grandchild`;
             }
 
-            return li;
-        }
+            // Aunt/Uncle logic
+            if (dist1 === 1) {
+                if (dist2 === 2) return 'Nephew/Niece';
+                if (dist2 === 3) return 'Grandnephew/Grandniece';
+            }
+            if (dist2 === 1) {
+                if (dist1 === 2) return 'Aunt/Uncle';
+                if (dist1 === 3) return 'Great Aunt/Uncle';
+            }
 
-        // Function to initiate the rendering
-        function render() {
-            const treeContainer = document.getElementById('tree-container');
-            treeContainer.innerHTML = '';
+            // Cousin with 'removed' logic
+            const removed = Math.abs(dist1 - dist2);
+            const cousinNumber = Math.min(dist1, dist2) - 1;
+
+            if (removed === 0) {
+                 if (cousinNumber === 1) return 'Sibling';
+                 return `${cousinNumber}th Cousin`;
+            }
+            if (removed > 0) {
+                if (cousinNumber === 0) {
+                    return removed === 1 ? 'Aunt/Uncle' : `${removed-1}x Great Aunt/Uncle`;
+                }
+                return `${cousinNumber}nd Cousin, ${removed}x Removed`;
+            }
+            return 'Relative';
+        };
+
+        // Function to recursively render the tree
+        const renderTree = (data, parentEl) => {
             const ul = document.createElement('ul');
-            ul.className = 'flex flex-wrap justify-center';
-            ul.appendChild(renderTree(familyData));
-            treeContainer.appendChild(ul);
-        }
+            parentEl.appendChild(ul);
 
-        // Function to export the tree as a JSON file
-        function exportFamilyTree() {
-            const jsonString = JSON.stringify(familyData, null, 2);
-            const blob = new Blob([jsonString], { type: 'application/json' });
+            data.children.forEach(person => {
+                const li = document.createElement('li');
+                li.setAttribute('data-id', person.id);
+
+                const personDiv = document.createElement('div');
+                personDiv.className = 'person';
+
+                // Name input field
+                const nameInput = document.createElement('input');
+                nameInput.type = 'text';
+                nameInput.placeholder = 'Enter name';
+                nameInput.value = person.name;
+                nameInput.className = 'text-center';
+                nameInput.addEventListener('input', (e) => {
+                    person.name = e.target.value;
+                    updateRelationships();
+                });
+                personDiv.appendChild(nameInput);
+
+                // Relationship text field
+                const relationText = document.createElement('p');
+                relationText.className = 'relation-text';
+                personDiv.appendChild(relationText);
+
+                // Checkbox for "This is me"
+                const checkboxWrapper = document.createElement('div');
+                checkboxWrapper.className = 'flex items-center gap-2 mt-2';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500';
+                checkbox.checked = meId === person.id;
+                checkbox.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        meId = person.id;
+                        document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                            if (cb !== e.target) {
+                                cb.checked = false;
+                            }
+                        });
+                    } else {
+                        meId = null;
+                    }
+                    updateRelationships();
+                });
+                checkboxWrapper.appendChild(checkbox);
+
+                const checkboxLabel = document.createElement('span');
+                checkboxLabel.textContent = 'This is me';
+                checkboxLabel.className = 'text-sm text-gray-600';
+                checkboxWrapper.appendChild(checkboxLabel);
+                personDiv.appendChild(checkboxWrapper);
+
+                // Add child button
+                const addButton = document.createElement('button');
+                addButton.textContent = 'Add Child';
+                addButton.className = 'mt-2';
+                addButton.addEventListener('click', () => {
+                    const newChild = new Person('', person.id);
+                    person.children.push(newChild);
+                    render();
+                });
+                personDiv.appendChild(addButton);
+
+                li.appendChild(personDiv);
+
+                if (person.children.length > 0) {
+                    renderTree(person, li);
+                }
+
+                ul.appendChild(li);
+            });
+        };
+
+        // Function to update the relationship text for all people
+        const updateRelationships = () => {
+            const allPeople = document.querySelectorAll('.person');
+            allPeople.forEach(el => {
+                const id = el.closest('li').getAttribute('data-id');
+                const person = findPersonById(id);
+                const relationEl = el.querySelector('.relation-text');
+
+                if (meId) {
+                    const mePerson = findPersonById(meId);
+                    const relation = getRelationship(person, mePerson);
+                    relationEl.textContent = relation;
+                    relationEl.style.display = 'block';
+                } else {
+                    relationEl.textContent = '';
+                    relationEl.style.display = 'none';
+                }
+            });
+        };
+
+        // The main render function
+        const render = () => {
+            treeElement.innerHTML = '';
+            const rootLi = document.createElement('li');
+            const rootDiv = document.createElement('div');
+            rootDiv.className = 'person';
+            rootDiv.setAttribute('data-id', familyTreeData.id);
+
+            const rootNameInput = document.createElement('input');
+            rootNameInput.type = 'text';
+            rootNameInput.placeholder = 'Enter name';
+            rootNameInput.value = familyTreeData.name;
+            rootNameInput.className = 'text-center';
+            rootNameInput.addEventListener('input', (e) => {
+                familyTreeData.name = e.target.value;
+                updateRelationships();
+            });
+            rootDiv.appendChild(rootNameInput);
+
+            const rootRelationText = document.createElement('p');
+            rootRelationText.className = 'relation-text';
+            rootDiv.appendChild(rootRelationText);
+
+            const rootAddButton = document.createElement('button');
+            rootAddButton.textContent = 'Add Child';
+            rootAddButton.className = 'mt-2';
+            rootAddButton.addEventListener('click', () => {
+                const newChild = new Person('', familyTreeData.id);
+                familyTreeData.children.push(newChild);
+                render();
+            });
+            rootDiv.appendChild(rootAddButton);
+
+            rootLi.appendChild(rootDiv);
+            treeElement.appendChild(rootLi);
+
+            if (familyTreeData.children.length > 0) {
+                renderTree(familyTreeData, rootLi);
+            }
+
+            updateRelationships();
+        };
+
+        // Export button functionality
+        exportButton.addEventListener('click', () => {
+            const dataStr = JSON.stringify(familyTreeData, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
-            
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'family-tree.json';
+            a.download = 'family_tree.json';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-        }
+        });
 
-        // Event listener for the export button
-        document.getElementById('exportBtn').addEventListener('click', exportFamilyTree);
+        // Initial render
+        render();
 
-        // Start Firebase on page load
-        initFirebase();
     </script>
-
 </body>
 </html>
