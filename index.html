@@ -202,6 +202,7 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script type="module">
         // Helper function to create a unique ID
         const generateId = () => Math.random().toString(36).substring(2, 9);
@@ -266,20 +267,16 @@
         };
 
         // Function to find the path from a person to the root
-        const findPathToRoot = (id, node = familyTreeData, path = []) => {
-            if (node.id === id) {
-                path.push(node);
-                return path;
+        const findPathToRoot = (id) => {
+            const path = [];
+            let currentNode = findPersonById(id);
+            while (currentNode) {
+                path.push(currentNode);
+                currentNode = findPersonById(currentNode.parentId);
             }
-            for (const child of node.children) {
-                const foundPath = findPathToRoot(child, id, path);
-                if (foundPath) {
-                    foundPath.push(node);
-                    return foundPath;
-                }
-            }
-            return null;
+            return path;
         };
+
 
         // Function to get the relationship between two people
         const getRelationship = (person1, person2) => {
@@ -522,21 +519,16 @@
 
         // Export button functionality
         exportButton.addEventListener('click', () => {
-            const dataStr = JSON.stringify(familyTreeData, null, 2);
-            const blob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'family_tree.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            html2canvas(document.getElementById('treeContainer')).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'family_tree.jpeg';
+                link.href = canvas.toDataURL('image/jpeg', 1.0);
+                link.click();
+            });
         });
 
         // Initial render
         render();
-
     </script>
 </body>
 </html>
