@@ -86,7 +86,8 @@
             gap: 0.5rem;
             flex-shrink: 0;
             z-index: 20;
-            width: 150px;
+            min-width: 150px; /* Use min-width instead of fixed width */
+            max-width: 250px;
             position: relative;
         }
         .person textarea {
@@ -97,6 +98,7 @@
             min-height: 44px; /* Minimum height for text area */
             resize: vertical; /* Allow vertical resizing */
             text-align: center;
+            height: auto; /* Allow height to adjust */
         }
         .person button {
             background-color: #2563eb;
@@ -531,14 +533,30 @@
         // Export button functionality
         exportButton.addEventListener('click', () => {
             const originalScale = currentScale;
-            treeElement.style.transform = `scale(1.0)`; // Temporarily reset scale for high-res capture
-            setTimeout(() => { // Small delay to allow render
+            const originalHeights = [];
+            const textareas = document.querySelectorAll('textarea');
+
+            // Temporarily expand textareas to show all content
+            textareas.forEach(textarea => {
+                originalHeights.push(textarea.style.height);
+                textarea.style.height = `${textarea.scrollHeight}px`;
+            });
+
+            // Temporarily reset scale to capture full-size tree
+            treeElement.style.transform = `scale(1.0)`;
+
+            setTimeout(() => {
                 html2canvas(document.getElementById('tree')).then(canvas => {
                     const link = document.createElement('a');
                     link.download = 'family_tree.jpeg';
                     link.href = canvas.toDataURL('image/jpeg', 1.0);
                     link.click();
-                    treeElement.style.transform = `scale(${originalScale})`; // Restore original scale
+
+                    // Restore original state after capture
+                    treeElement.style.transform = `scale(${originalScale})`;
+                    textareas.forEach((textarea, index) => {
+                        textarea.style.height = originalHeights[index];
+                    });
                 });
             }, 100);
         });
