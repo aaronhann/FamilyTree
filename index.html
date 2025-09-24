@@ -99,6 +99,7 @@
             resize: vertical; /* Allow vertical resizing */
             text-align: center;
             height: auto; /* Allow height to adjust */
+            font-size: 0.875rem; /* text-sm equivalent */
         }
         .person button {
             background-color: #2563eb;
@@ -533,13 +534,24 @@
         // Export button functionality
         exportButton.addEventListener('click', () => {
             const originalScale = currentScale;
-            const originalHeights = [];
+            const originalStyles = [];
+
+            // Temporarily reset styles to ensure full text visibility
+            const persons = document.querySelectorAll('.person');
             const textareas = document.querySelectorAll('textarea');
 
-            // Temporarily expand textareas to show all content
-            textareas.forEach(textarea => {
-                originalHeights.push(textarea.style.height);
+            persons.forEach((person, index) => {
+                originalStyles[index] = {
+                    maxWidth: person.style.maxWidth,
+                };
+                person.style.maxWidth = 'none';
+            });
+
+            textareas.forEach((textarea, index) => {
+                originalStyles[index].height = textarea.style.height;
+                originalStyles[index].overflow = textarea.style.overflow;
                 textarea.style.height = `${textarea.scrollHeight}px`;
+                textarea.style.overflow = 'visible';
             });
 
             // Temporarily reset scale to capture full-size tree
@@ -554,8 +566,12 @@
 
                     // Restore original state after capture
                     treeElement.style.transform = `scale(${originalScale})`;
+                    persons.forEach((person, index) => {
+                        person.style.maxWidth = originalStyles[index].maxWidth;
+                    });
                     textareas.forEach((textarea, index) => {
-                        textarea.style.height = originalHeights[index];
+                        textarea.style.height = originalStyles[index].height;
+                        textarea.style.overflow = originalStyles[index].overflow;
                     });
                 });
             }, 100);
