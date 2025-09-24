@@ -84,16 +84,19 @@
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
-            /* Optimized for mobile: let flexbox handle width */
             flex-shrink: 0;
             z-index: 20;
             width: 150px;
+            position: relative;
         }
-        .person input[type="text"] {
+        .person textarea {
             padding: 0.5rem;
             border: 1px solid #d1d5db;
             border-radius: 8px;
             width: 100%;
+            min-height: 44px; /* Minimum height for text area */
+            resize: vertical; /* Allow vertical resizing */
+            text-align: center;
         }
         .person button {
             background-color: #2563eb;
@@ -113,21 +116,55 @@
             text-transform: uppercase;
         }
         .tree-container {
-            overflow-x: auto;
-            padding: 1rem 0; /* Adjusted for better mobile padding */
+            overflow: hidden; /* Prevent scrolling */
+            padding: 1rem 0;
             display: flex;
             justify-content: center;
         }
-
-        /* Mobile-first adjustments */
-        @media (max-width: 640px) {
-            .person {
-                width: 120px; /* Smaller cards for mobile */
-                padding: 0.75rem;
-            }
-            .person input[type="text"] {
-                font-size: 0.875rem;
-            }
+        .remove-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background-color: #ef4444;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 30;
+            transition: background-color 0.2s;
+            line-height: 1;
+        }
+        .remove-btn:hover {
+            background-color: #dc2626;
+        }
+        #tree {
+            transform-origin: top center;
+        }
+        .zoom-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .zoom-buttons button {
+            background-color: #6b7280;
+            color: white;
+            border-radius: 9999px;
+            width: 3rem;
+            height: 3rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+        .zoom-buttons button:hover {
+            background-color: #4b5563;
         }
     </style>
 </head>
@@ -139,10 +176,15 @@
             <p class="text-gray-600 mt-2">Enter names and build your family tree. Select "This is me" to see the relationships!</p>
         </div>
 
-        <div class="flex justify-center items-center gap-4 mb-8">
+        <div class="flex flex-col sm:flex-row justify-center items-center gap-4 mb-8">
             <button id="exportButton" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl shadow-lg transition-all transform hover:scale-105">
                 Export Tree
             </button>
+            <div class="zoom-buttons">
+                <button id="zoomOutBtn" class="bg-gray-600 hover:bg-gray-700">-</button>
+                <button id="zoomInBtn" class="bg-gray-600 hover:bg-gray-700">+</button>
+                <button id="zoomResetBtn" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 text-sm">Reset</button>
+            </div>
         </div>
 
         <div id="treeContainer" class="tree-container">
@@ -174,6 +216,34 @@
 
         const treeElement = document.getElementById('tree');
         const exportButton = document.getElementById('exportButton');
+        const zoomInBtn = document.getElementById('zoomInBtn');
+        const zoomOutBtn = document.getElementById('zoomOutBtn');
+        const zoomResetBtn = document.getElementById('zoomResetBtn');
+        
+        let currentScale = 1.0;
+
+        const updateZoom = () => {
+            treeElement.style.transform = `scale(${currentScale})`;
+        };
+
+        zoomInBtn.addEventListener('click', () => {
+            if (currentScale < 2.0) {
+                currentScale += 0.1;
+                updateZoom();
+            }
+        });
+
+        zoomOutBtn.addEventListener('click', () => {
+            if (currentScale > 0.5) {
+                currentScale -= 0.1;
+                updateZoom();
+            }
+        });
+
+        zoomResetBtn.addEventListener('click', () => {
+            currentScale = 1.0;
+            updateZoom();
+        });
 
         // Function to find a person in the tree by their ID
         const findPersonById = (id, node = familyTreeData) => {
@@ -298,9 +368,22 @@
                 const personDiv = document.createElement('div');
                 personDiv.className = 'person';
 
+                // Add remove button
+                const removeBtn = document.createElement('div');
+                removeBtn.className = 'remove-btn';
+                removeBtn.textContent = 'x';
+                removeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevents clicks from bubbling to other elements
+                    const parent = findPersonById(person.parentId);
+                    if (parent) {
+                        parent.children = parent.children.filter(child => child.id !== person.id);
+                        render();
+                    }
+                });
+                personDiv.appendChild(removeBtn);
+
                 // Name input field
-                const nameInput = document.createElement('input');
-                nameInput.type = 'text';
+                const nameInput = document.createElement('textarea');
                 nameInput.placeholder = 'Enter name';
                 nameInput.value = person.name;
                 nameInput.className = 'text-center';
@@ -392,8 +475,7 @@
             rootDiv.className = 'person';
             rootDiv.setAttribute('data-id', familyTreeData.id);
 
-            const rootNameInput = document.createElement('input');
-            rootNameInput.type = 'text';
+            const rootNameInput = document.createElement('textarea');
             rootNameInput.placeholder = 'Enter name';
             rootNameInput.value = familyTreeData.name;
             rootNameInput.className = 'text-center';
@@ -425,6 +507,7 @@
             }
 
             updateRelationships();
+            updateZoom(); // Ensure initial scale is applied
         };
 
         // Export button functionality
