@@ -116,10 +116,11 @@
             text-transform: uppercase;
         }
         .tree-container {
-            overflow: hidden; /* Prevent scrolling */
+            overflow: hidden;
             padding: 1rem 0;
             display: flex;
             justify-content: center;
+            min-height: 80vh;
         }
         .remove-btn {
             position: absolute;
@@ -237,6 +238,17 @@
             treeElement.style.transform = `scale(${currentScale})`;
         };
 
+        const fitTreeToScreen = () => {
+            const containerWidth = document.getElementById('treeContainer').offsetWidth;
+            const treeWidth = treeElement.scrollWidth;
+            if (treeWidth > containerWidth) {
+                currentScale = containerWidth / treeWidth;
+            } else {
+                currentScale = 1.0;
+            }
+            updateZoom();
+        };
+
         zoomInBtn.addEventListener('click', () => {
             if (currentScale < 2.0) {
                 currentScale += 0.1;
@@ -252,8 +264,7 @@
         });
 
         zoomResetBtn.addEventListener('click', () => {
-            currentScale = 1.0;
-            updateZoom();
+            fitTreeToScreen();
         });
 
         // Function to find a person in the tree by their ID
@@ -514,18 +525,26 @@
             }
 
             updateRelationships();
-            updateZoom(); // Ensure initial scale is applied
+            fitTreeToScreen();
         };
 
         // Export button functionality
         exportButton.addEventListener('click', () => {
-            html2canvas(document.getElementById('treeContainer')).then(canvas => {
-                const link = document.createElement('a');
-                link.download = 'family_tree.jpeg';
-                link.href = canvas.toDataURL('image/jpeg', 1.0);
-                link.click();
-            });
+            const originalScale = currentScale;
+            treeElement.style.transform = `scale(1.0)`; // Temporarily reset scale for high-res capture
+            setTimeout(() => { // Small delay to allow render
+                html2canvas(document.getElementById('tree')).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = 'family_tree.jpeg';
+                    link.href = canvas.toDataURL('image/jpeg', 1.0);
+                    link.click();
+                    treeElement.style.transform = `scale(${originalScale})`; // Restore original scale
+                });
+            }, 100);
         });
+
+        // Add a resize listener to re-fit the tree when the window size changes
+        window.addEventListener('resize', fitTreeToScreen);
 
         // Initial render
         render();
